@@ -113,3 +113,50 @@ public class ApiToVarServlet extends SlingAllMethodsServlet {
         response.getWriter().write("API response saved to /var folder successfully.");
     }
 }
+
+
+import java.io.IOException;
+import javax.servlet.Servlet;
+import javax.servlet.ServletException;
+import org.apache.http.HttpResponse;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.api.SlingHttpServletResponse;
+import org.apache.sling.api.servlets.HttpConstants;
+import org.apache.sling.api.servlets.SlingAllMethodsServlet;
+import org.osgi.service.component.annotations.Component;
+
+@Component(service = Servlet.class, property = {
+    "sling.servlet.methods=" + HttpConstants.METHOD_GET,
+    "sling.servlet.paths=/bin/getApiResponse"
+})
+public class ServletA extends SlingAllMethodsServlet {
+
+    @Override
+    protected void doGet(SlingHttpServletRequest request, SlingHttpServletResponse response)
+            throws ServletException, IOException {
+      
+      CredentialsProvider provider = new BasicCredentialsProvider();
+      provider.setCredentials(
+              AuthScope.ANY,
+              new UsernamePasswordCredentials("admin", "admin")); // Replace with appropriate credentials
+
+        try (CloseableHttpClient httpClient = HttpClients.custom()
+            .setDefaultCredentialsProvider(provider)
+            .build()) {
+            HttpGet httpGet = new HttpGet("http://localhost:4502/bin/servletB"); //here you need to give ur servlet path
+            HttpResponse httpResponse = httpClient.execute(httpGet);
+
+            String responseBody = EntityUtils.toString(httpResponse.getEntity());
+            
+            response.getWriter().write(responseBody);
+        }
+    }
+}
